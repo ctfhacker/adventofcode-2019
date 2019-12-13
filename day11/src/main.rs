@@ -560,6 +560,79 @@ impl From<isize> for Turn {
     }
 }
 
+enum TileId {
+    Empty,
+    Wall,
+    Block,
+    Paddle,
+    Ball
+}
+
+impl From<isize> for TileId {
+    fn from(val: isize) -> TileId {
+        match val {
+            0 => TileId::Empty,
+            1 => TileId::Wall,
+            2 => TileId::Block,
+            3 => TileId::Paddle,
+            4 => TileId::Ball,
+            _ => unreachable!()
+        }
+    }
+}
+
+struct Board {
+    /// Total width of the board
+    width: usize,
+
+    /// Total height of the board
+    _height: usize,
+
+    /// Center x
+    center_x: usize,
+
+    /// Center y
+    center_y: usize,
+
+    /// Underlying buffer of the board
+    buffer: Vec<char>
+}
+
+impl Board {
+    /// Given a width and height, create a new board of (width * 2 + 1)
+    pub fn new(width: usize, height: usize) -> Board {
+        // Allocate the print buffer with '.' as blank spaces
+        let mut buffer = Vec::new();
+        for _ in 0..((width * 2 + 1) * (height * 2 + 1)) {
+            buffer.push(' ');
+        }
+
+        Board {
+            width: width * 2 + 1,
+            _height: height * 2 + 1,
+            center_x: width,
+            center_y: height,
+            buffer
+        }
+    }
+
+    pub fn mark(&mut self, x: isize, y: isize) {
+        let curr_y = self.center_y + (-1 * y) as usize;
+        let curr_x = (self.center_x as isize + x) as usize;
+        self.buffer[curr_y * self.width + curr_x] = '%';
+    }
+
+    pub fn print(&self) {
+        // Print the resulting board
+        for line in self.buffer.as_slice().chunks(self.width) {
+            for c in line {
+                print!("{}", c);
+            }
+            print!("\n");
+        }
+    }
+}
+
 fn main() {
     let input = include_str!("../input");
     let mut program = Program::from_input(input);
@@ -609,32 +682,17 @@ fn main() {
     let max_x = visited.keys().map(|x| (x.0 as isize).abs() as usize).max().unwrap();
     let max_y = visited.keys().map(|x| (x.1 as isize).abs() as usize).max().unwrap();
 
-    // Allocate the print buffer with '.' as blank spaces
-    let mut buffer = Vec::new();
-    for _ in 0..((max_x * 2 + 1) * (max_y * 2 + 1)) {
-        buffer.push('.');
-    }
+    let mut board = Board::new(max_x, max_y);
 
-    // Set the center of the grid
-    let center_x = max_x as usize;
-    let center_y = max_y as usize;
-
-    // 
     for ((x, y), &color) in visited.iter() {
         if color == 0 {
             continue;
         }
-        let curr_y = center_y + (-1 * *y as isize) as usize;
-        let curr_x = (center_x as isize + x) as usize;
-        buffer[curr_y * (max_x * 2) + curr_x] = '%';
+
+        board.mark(*x, *y);
     }
 
-    // Print the resulting board
-    for line in buffer.as_slice().chunks(max_x * 2) {
-        for c in line {
-            print!("{}", c);
-        }
-            print!("\n");
-    }
+    board.print();
+
 }
 
